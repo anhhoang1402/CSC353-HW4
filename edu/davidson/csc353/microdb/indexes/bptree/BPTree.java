@@ -12,7 +12,7 @@ import java.util.function.Function;
 public class BPTree<K extends Comparable<K>, V> {
     private final BPNodeFactory<K, V> nodeFactory;
 
-    private final int rootNumber;
+    private int rootNumber;
 
     public BPTree(Function<String, K> loadKey, Function<String, V> loadValue) {
         nodeFactory = new BPNodeFactory<>("test-index", loadKey, loadValue);
@@ -120,11 +120,13 @@ public class BPTree<K extends Comparable<K>, V> {
         System.out.println("Inserting " + key);
 
         BPNode<K, V> insertPlace = find(nodeFactory.getNode(rootNumber), key);
-        insertPlace.insertChild(key,insertPlace.getNumberOfKeys(),nodeFactory);
+
+        insertPlace.insertValue(key,value);
 
         // check for overflown
         if(insertPlace.getNumberOfKeys() >= BPNode.SIZE){
             SplitResult<K,V> result = insertPlace.splitLeaf(nodeFactory);
+            insertOnParent(result.left,result.dividerKey,result.right);
         }
 
 
@@ -139,9 +141,29 @@ public class BPTree<K extends Comparable<K>, V> {
      * @param right Right B+Tree node after a split has been made.
      */
     private void insertOnParent(BPNode<K, V> left, K key, BPNode<K, V> right) {
-        // TODO ...
+        BPNode<K,V> parent = nodeFactory.getNode(left.parent);
 
-        // Need to keep calling insertOnParent after performing an internal node split
+        //base case: if the parent is the root
+        if (left.parent == rootNumber){
+            BPNode<K,V> newRoot= nodeFactory.create(false);
+            newRoot.keys.add(key);
+            newRoot.children.add(left.number);
+            left.parent = newRoot.number;
+
+            newRoot.children.add(right.number);
+            right.parent = newRoot.number;
+
+            rootNumber = newRoot.number;
+        }
+
+        //insert the divider key to the parent
+        parent.insertChild(key, right.number, nodeFactory);
+
+        if(parent.keys.size() >= BPNode.SIZE){
+            SplitResult<K,V> result = parent.splitInternal(nodeFactory);
+            // Need to keep calling insertOnParent after performing an internal node split
+            insertOnParent(result.left,result.dividerKey,result.right);
+        }
     }
 
     /**
