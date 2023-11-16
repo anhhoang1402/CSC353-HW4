@@ -144,7 +144,7 @@ public class BPTree<K extends Comparable<K>, V> {
         BPNode<K,V> parent = nodeFactory.getNode(left.parent);
 
         //base case: if the parent is the root
-        if (left.parent == rootNumber){
+        if (parent == null){
             BPNode<K,V> newRoot= nodeFactory.create(false);
             newRoot.keys.add(key);
             newRoot.children.add(left.number);
@@ -154,6 +154,8 @@ public class BPTree<K extends Comparable<K>, V> {
             right.parent = newRoot.number;
 
             rootNumber = newRoot.number;
+
+            return;
         }
 
         //insert the divider key to the parent
@@ -206,6 +208,6 @@ public class BPTree<K extends Comparable<K>, V> {
             }
         }
         // If key is greater than all keys in the node, go to the last child
-        return find(nodeFactory.getNode(node.getChild(node.getNumberOfKeys())), key);
+        return find(nodeFactory.getNode(node.getChild(node.getNumberOfKeys()-1)), key);
     }
 }
