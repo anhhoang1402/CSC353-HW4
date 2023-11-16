@@ -128,7 +128,7 @@ public class BPNode<K extends Comparable<K>, V> {
      * due to the first pointer.
      *
      * @param key         The key.
-     * @param value       The child node reference that should FOLLOW the key.
+     * @param childNumber       The child node reference that should FOLLOW the key.
      * @param nodeFactory Factory that generates new nodes.
      */
     public void insertChild(K key, int childNumber, BPNodeFactory<K, V> nodeFactory) {
@@ -167,7 +167,20 @@ public class BPNode<K extends Comparable<K>, V> {
         result.left = this;
         result.right = nodeFactory.create(true);
 
-        // TODO ...
+
+        //Add keys/values to the right node and erase the values in left node
+        for(int i=keys.size()/2; i < keys.size();i++){
+            result.right.keys.add(keys.get(i));
+            result.right.values.add(values.get(i));
+            this.keys.remove(i);
+            this.values.remove(i);
+        }
+
+        //Set next of left to right
+        result.left.next = result.right.number;
+
+        //Set the divider key
+        result.dividerKey = result.right.getKey(0);
 
         return result;
     }
@@ -189,7 +202,16 @@ public class BPNode<K extends Comparable<K>, V> {
         result.left = this;
         result.right = nodeFactory.create(false);
 
-        // TODO ...
+        //Add keys/children to the right node and erase the values in left node
+        for(int i= keys.size()/2; i < keys.size();i++){
+            result.right.keys.add(keys.get(i));
+            result.right.children.add(children.get(i));
+            this.keys.remove(i);
+            this.children.remove(i);
+        }
+
+        //Set the divider key
+        result.dividerKey = result.right.getKey(0);
 
         return result;
     }

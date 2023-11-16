@@ -120,8 +120,13 @@ public class BPTree<K extends Comparable<K>, V> {
         System.out.println("Inserting " + key);
 
         BPNode<K, V> insertPlace = find(nodeFactory.getNode(rootNumber), key);
+        insertPlace.insertChild(key,insertPlace.getNumberOfKeys(),nodeFactory);
 
-        // TODO ...
+        // check for overflown
+        if(insertPlace.getNumberOfKeys() >= BPNode.SIZE){
+            SplitResult<K,V> result = insertPlace.splitLeaf(nodeFactory);
+        }
+
 
         // Need to call insertOnParent after performing a leaf node split
     }
@@ -173,7 +178,7 @@ public class BPTree<K extends Comparable<K>, V> {
             if (more(key, node.getKey(i))) {
                 continue;
             } else if (equal(key, node.getKey(i))) {
-                return find(nodeFactory.getNode(node.getChild(i + 1)), key);
+                return find(nodeFactory.getNode(node.getChild(i + 1)), key);//why is it i+1
             } else {
                 return find(nodeFactory.getNode(node.getChild(i)), key);
             }
