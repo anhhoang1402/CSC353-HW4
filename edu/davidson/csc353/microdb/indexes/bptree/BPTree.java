@@ -129,7 +129,6 @@ public class BPTree<K extends Comparable<K>, V> {
             SplitResult<K, V> result = insertPlace.splitLeaf(nodeFactory);
             insertOnParent(result.left, result.dividerKey, result.right);
         }
-        //printTreeStructure(nodeFactory.getNode(rootNumber), 0);
     }
 
     /**
@@ -167,19 +166,6 @@ public class BPTree<K extends Comparable<K>, V> {
         }
     }
 
-    private void printTreeStructure(BPNode<K, V> node, int level) {
-        // Print the current node's details
-        System.out.println("Level " + level + " Node " + node.number + ": " + node.keys);
-
-        // If it's not a leaf, recursively print its children
-        if (!node.isLeaf()) {
-            for (int childNum : node.children) {
-                BPNode<K, V> childNode = nodeFactory.getNode(childNum);
-                printTreeStructure(childNode, level + 1);
-            }
-        }
-    }
-
     /**
      * Returns a value associated with a particular key.
      *
@@ -188,7 +174,6 @@ public class BPTree<K extends Comparable<K>, V> {
      */
     public V get(K key) {
         BPNode<K, V> node = find(nodeFactory.getNode(rootNumber), key);
-        // Assuming the node contains keys and values in sorted order
         for (int i = 0; i < node.getNumberOfKeys(); i++) {
             if (equal(node.getKey(i), key)) {
                 return node.getValue(i);
@@ -214,12 +199,25 @@ public class BPTree<K extends Comparable<K>, V> {
             if (more(key, node.getKey(i))) {
                 continue;
             } else if (equal(key, node.getKey(i))) {
-                return find(nodeFactory.getNode(node.getChild(i + 1)), key);//why is it i+1
+                return find(nodeFactory.getNode(node.getChild(i + 1)), key);
             } else {
                 return find(nodeFactory.getNode(node.getChild(i)), key);
             }
         }
         // If key is greater than all keys in the node, go to the last child
         return find(nodeFactory.getNode(node.getChild(node.getNumberOfKeys())), key);
+    }
+
+    private void printTreeStructure(BPNode<K, V> node, int level) {
+        // Print the current node's details
+        System.out.println("Level " + level + " Node " + node.number + ": " + node.keys);
+
+        // If it's not a leaf, recursively print its children
+        if (!node.isLeaf()) {
+            for (int childNum : node.children) {
+                BPNode<K, V> childNode = nodeFactory.getNode(childNum);
+                printTreeStructure(childNode, level + 1);
+            }
+        }
     }
 }
