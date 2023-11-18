@@ -63,8 +63,9 @@ public class BPTree<K extends Comparable<K>, V> {
      * @param arguments None.
      */
     public static void main(String[] arguments) {
-        BPTree<String, Integer> testIndex = new BPTree<>(k -> k, s -> Integer.parseInt(s));
 
+
+        BPTree<String, Integer> testIndex = new BPTree<>(k -> k, s -> Integer.parseInt(s));
         testIndex.insert("i", 9);
         testIndex.insert("l", 12);
         testIndex.insert("g", 7);
@@ -87,6 +88,7 @@ public class BPTree<K extends Comparable<K>, V> {
         System.out.println(testIndex.get("a")); // Should print 1
         System.out.println(testIndex.get("c")); // Should print 3
         System.out.println(testIndex.get("x")); // Should print null
+
 
         BPNode<String, Integer> node1 = testIndex.nodeFactory.getNode(testIndex.rootNumber);
         BPNode<String, Integer> node2 = testIndex.find(node1, "a");
@@ -118,19 +120,14 @@ public class BPTree<K extends Comparable<K>, V> {
      */
     public void insert(K key, V value) {
         System.out.println("Inserting " + key);
-
         BPNode<K, V> insertPlace = find(nodeFactory.getNode(rootNumber), key);
-
-        insertPlace.insertValue(key,value);
-
+        insertPlace.insertValue(key, value);
         // check for overflown
-        if(insertPlace.getNumberOfKeys() >= BPNode.SIZE){
-            SplitResult<K,V> result = insertPlace.splitLeaf(nodeFactory);
-            insertOnParent(result.left,result.dividerKey,result.right);
+        if (insertPlace.getNumberOfKeys() >= BPNode.SIZE) {
+            SplitResult<K, V> result = insertPlace.splitLeaf(nodeFactory);
+            insertOnParent(result.left, result.dividerKey, result.right);
         }
-
-
-        // Need to call insertOnParent after performing a leaf node split
+        //printTreeStructure(nodeFactory.getNode(rootNumber), 0);
     }
 
     /**
@@ -141,11 +138,11 @@ public class BPTree<K extends Comparable<K>, V> {
      * @param right Right B+Tree node after a split has been made.
      */
     private void insertOnParent(BPNode<K, V> left, K key, BPNode<K, V> right) {
-        BPNode<K,V> parent = nodeFactory.getNode(left.parent);
+        BPNode<K, V> parent = nodeFactory.getNode(left.parent);
 
         //base case: if the parent is the root
-        if (parent == null){
-            BPNode<K,V> newRoot= nodeFactory.create(false);
+        if (parent == null) {
+            BPNode<K, V> newRoot = nodeFactory.create(false);
             newRoot.keys.add(key);
             newRoot.children.add(left.number);
             left.parent = newRoot.number;
@@ -161,10 +158,23 @@ public class BPTree<K extends Comparable<K>, V> {
         //insert the divider key to the parent
         parent.insertChild(key, right.number, nodeFactory);
 
-        if(parent.keys.size() >= BPNode.SIZE){
-            SplitResult<K,V> result = parent.splitInternal(nodeFactory);
+        if (parent.keys.size() >= BPNode.SIZE) {
+            SplitResult<K, V> result = parent.splitInternal(nodeFactory);
             // Need to keep calling insertOnParent after performing an internal node split
-            insertOnParent(result.left,result.dividerKey,result.right);
+            insertOnParent(result.left, result.dividerKey, result.right);
+        }
+    }
+
+    private void printTreeStructure(BPNode<K, V> node, int level) {
+        // Print the current node's details
+        System.out.println("Level " + level + " Node " + node.number + ": " + node.keys);
+
+        // If it's not a leaf, recursively print its children
+        if (!node.isLeaf()) {
+            for (int childNum : node.children) {
+                BPNode<K, V> childNode = nodeFactory.getNode(childNum);
+                printTreeStructure(childNode, level + 1);
+            }
         }
     }
 
@@ -208,6 +218,6 @@ public class BPTree<K extends Comparable<K>, V> {
             }
         }
         // If key is greater than all keys in the node, go to the last child
-        return find(nodeFactory.getNode(node.getChild(node.getNumberOfKeys()-1)), key);
+        return find(nodeFactory.getNode(node.getChild(node.getNumberOfKeys())), key);
     }
 }

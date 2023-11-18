@@ -128,7 +128,7 @@ public class BPNode<K extends Comparable<K>, V> {
      * due to the first pointer.
      *
      * @param key         The key.
-     * @param childNumber       The child node reference that should FOLLOW the key.
+     * @param childNumber The child node reference that should FOLLOW the key.
      * @param nodeFactory Factory that generates new nodes.
      */
     public void insertChild(K key, int childNumber, BPNodeFactory<K, V> nodeFactory) {
@@ -167,23 +167,30 @@ public class BPNode<K extends Comparable<K>, V> {
         result.left = this;
         result.right = nodeFactory.create(true);
 
+        int mid = keys.size() / 2;
 
-        //Add keys/values to the right node and erase the values in left node
-        for(int i=keys.size()/2; i < keys.size();i++){
+        // Transfer the second half of the keys/values to the right node
+        for (int i = mid; i < keys.size(); i++) {
             result.right.keys.add(keys.get(i));
             result.right.values.add(values.get(i));
-            this.keys.remove(i);
-            this.values.remove(i);
         }
 
-        //Set next of left to right
+        // Remove the transferred keys/values from the left node
+        // Do this in reverse order to avoid index issues
+        for (int i = keys.size() - 1; i >= mid; i--) {
+            keys.remove(i);
+            values.remove(i);
+        }
+
+        // Set next of left to right
         result.left.next = result.right.number;
 
-        //Set the divider key
+        // Set the divider key
         result.dividerKey = result.right.getKey(0);
 
         return result;
     }
+
 
     /**
      * Splits an overflowed leaf internal into a {@link SplitResult} object,
@@ -202,19 +209,29 @@ public class BPNode<K extends Comparable<K>, V> {
         result.left = this;
         result.right = nodeFactory.create(false);
 
-        //Add keys/children to the right node and erase the values in left node
-        for(int i= keys.size()/2; i < keys.size();i++){
+        int mid = keys.size() / 2;
+        result.dividerKey = keys.get(mid);
+
+        // Transfer the keys and children to the right of the median key to the new right node
+        for (int i = mid + 1; i < keys.size(); i++) {
             result.right.keys.add(keys.get(i));
+        }
+        for (int i = mid + 1; i < children.size(); i++) {
             result.right.children.add(children.get(i));
-            this.keys.remove(i);
-            this.children.remove(i);
         }
 
-        //Set the divider key
-        result.dividerKey = result.right.getKey(0);
+        for (int i = keys.size() - 1; i >= mid; i--) {
+            keys.remove(i);
+        }
+
+        for (int i = children.size() - 1; i >= mid + 1; i--) {
+            children.remove(i);
+        }
+
 
         return result;
     }
+
 
     /**
      * Returns a string representation of the B+Tree node.
