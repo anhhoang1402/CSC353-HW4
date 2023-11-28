@@ -98,8 +98,8 @@ public class BPTree<K extends Comparable<K>, V> {
         ByteBuffer buffer1 = ByteBuffer.allocate(512);
         ByteBuffer buffer2 = ByteBuffer.allocate(512);
 
-        node1.save(buffer1);
-        node2.save(buffer2);
+        node1.save(buffer1, testIndex.nodeFactory);
+        node2.save(buffer2, testIndex.nodeFactory);
 
         BPNode<String, Integer> newNode1 = new BPNode<>(false);
         BPNode<String, Integer> newNode2 = new BPNode<>(true);
@@ -112,6 +112,57 @@ public class BPTree<K extends Comparable<K>, V> {
 
         System.out.println("Original leaf: " + node2 + ", parent = " + node2.parent + ", next = " + node2.next + ", number = " + newNode2.number);
         System.out.println("Loaded leaf:   " + newNode2 + ", parent = " + newNode2.parent + ", next = " + newNode2.next + ", number = " + newNode2.number);
+
+
+        // Creating a simple leaf node
+        BPNode<String, Integer> leafNode = new BPNode<>(true);
+        leafNode.insertValue("apple", 1);
+        leafNode.insertValue("banana", 2);
+        leafNode.insertValue("cherry", 3);
+
+        // Saving the leaf node
+        ByteBuffer leafBuffer = ByteBuffer.allocate(512);
+        leafNode.save(leafBuffer, testIndex.nodeFactory);
+
+        // Loading into a new leaf node
+        BPNode<String, Integer> newLeafNode = new BPNode<>(true);
+        newLeafNode.load(leafBuffer, k -> k, s -> Integer.parseInt(s));
+
+        // Testing if the new node has the same content
+        System.out.println("Original Leaf Node: " + leafNode);
+        System.out.println("Loaded Leaf Node: " + newLeafNode);
+
+        // Creating a simple internal node
+        BPNode<String, Integer> internalNode = new BPNode<>(false);
+        internalNode.children.add(-1); // Using -1 or any placeholder value
+
+        internalNode.insertChild("mango", 1, testIndex.nodeFactory);
+        internalNode.insertChild("orange", 2, testIndex.nodeFactory);
+
+        // Creating a node with parent and next references
+        BPNode<String, Integer> parentNode = new BPNode<>(false);
+        parentNode.number = 5; // Assigning a unique number
+
+        BPNode<String, Integer> nextNode = new BPNode<>(true);
+        nextNode.number = 6; // Assigning a unique number
+
+        BPNode<String, Integer> nodeWithRefs = new BPNode<>(true);
+        nodeWithRefs.parent = parentNode.number;
+        nodeWithRefs.next = nextNode.number;
+        nodeWithRefs.insertValue("pear", 4);
+
+        // Saving the node with references
+        ByteBuffer refBuffer = ByteBuffer.allocate(512);
+        nodeWithRefs.save(refBuffer, testIndex.nodeFactory);
+
+        // Loading into a new node
+        BPNode<String, Integer> newNodeWithRefs = new BPNode<>(true);
+        newNodeWithRefs.load(refBuffer, k -> k, s -> Integer.parseInt(s));
+
+        // Testing if the new node has the same content and references
+        System.out.println("Original Node with Refs: " + nodeWithRefs + ", Parent: " + nodeWithRefs.parent + ", Next: " + nodeWithRefs.next);
+        System.out.println("Loaded Node with Refs: " + newNodeWithRefs + ", Parent: " + newNodeWithRefs.parent + ", Next: " + newNodeWithRefs.next);
+
     }
 
     /**
