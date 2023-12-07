@@ -4,6 +4,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.function.Function;
 
+import static edu.davidson.csc353.microdb.indexes.bptree.BPNodeFactory.DISK_SIZE;
+
 // Katherine Hu, Anh Hoang
 
 /**
@@ -148,7 +150,7 @@ public class BPNode<K extends Comparable<K>, V> {
         BPNode<K, V> child = nodeFactory.getNode(childNumber);
 
         child.parent = this.number;
-        //nodeFactory.save(child);
+        nodeFactory.save(child);
     }
 
     /**
@@ -293,8 +295,6 @@ public class BPNode<K extends Comparable<K>, V> {
         next = buffer.getInt();
         number = buffer.getInt();
 
-        leaf = buffer.getInt() == 1;
-
         int numKeys = buffer.getInt();
 
         keys.clear();
@@ -306,7 +306,6 @@ public class BPNode<K extends Comparable<K>, V> {
         }
 
         if (leaf) {
-            // For leaf nodes, read the values
             values.clear();
             for (int i = 0; i < numKeys; i++) {
                 int valueLength = buffer.getInt();
@@ -315,13 +314,13 @@ public class BPNode<K extends Comparable<K>, V> {
                 values.add(loadValue.apply(new String(valueBytes)));
             }
         } else {
-            // For internal nodes, read the children's node numbers
             children.clear();
             for (int i = 0; i < numKeys + 1; i++) {
                 children.add(buffer.getInt());
             }
         }
     }
+
 
     /**
      * Save the memory representation of the B+Tree node
@@ -330,39 +329,66 @@ public class BPNode<K extends Comparable<K>, V> {
      * @param buffer
      */
     public void save(ByteBuffer buffer, BPNodeFactory<K, V> nodeFactory) {
-    // TODO: Save to disk (that is, to the buffer), create your own file format
-    //  The getInt() and putInt() functions should be very helpful
-    //   To save a string, generate it in memory, then use getBytes() and use the put() function in the buffer.
-        buffer.rewind();
+        int totalSize = 0;
+        buffer.clear();
+        // Write leaf flag
         buffer.putInt(leaf ? 1 : 0);
+        totalSize += Integer.BYTES;
+
+        // Write parent
         buffer.putInt(parent);
+        totalSize += Integer.BYTES;
+
+        // Write next
         buffer.putInt(next);
+        totalSize += Integer.BYTES;
+
+        // Write number
         buffer.putInt(number);
-        buffer.putInt(leaf ? 1 : 0);
+        totalSize += Integer.BYTES;
+
+        // Write number of keys
         buffer.putInt(keys.size());
+        totalSize += Integer.BYTES;
 
         // Save the keys
         for (K key : keys) {
             String keyStr = key.toString();
-            buffer.putInt(keyStr.length());
-            buffer.put(keyStr.getBytes());
+            byte[] keyBytes = keyStr.getBytes();
+            buffer.putInt(keyBytes.length);
+            buffer.put(keyBytes);
+            int keySize = Integer.BYTES + keyBytes.length;
+            totalSize += keySize;
         }
 
         if (leaf) {
             // For leaf nodes, save the values
             for (V value : values) {
                 String valueStr = value.toString();
-                buffer.putInt(valueStr.length());
-                buffer.put(valueStr.getBytes());
+                byte[] valueBytes = valueStr.getBytes();
+                buffer.putInt(valueBytes.length);
+                buffer.put(valueBytes);
+                int valueSize = Integer.BYTES + valueBytes.length;
+                totalSize += valueSize;
             }
         } else {
             // For internal nodes, save the children's node numbers
             for (Integer childNumber : children) {
                 buffer.putInt(childNumber);
+                totalSize += Integer.BYTES;
             }
         }
-    }
 
+        if (totalSize > DISK_SIZE) {
+            throw new IllegalStateException("Data size exceeds buffer capacity before padding.");
+        }
+
+        // Padding the buffer
+        while (totalSize < DISK_SIZE) {
+            buffer.put((byte) 0);
+            totalSize++;
+        }
+    }
 }
 
 

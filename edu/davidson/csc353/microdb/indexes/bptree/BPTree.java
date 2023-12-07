@@ -65,8 +65,6 @@ public class BPTree<K extends Comparable<K>, V> {
      * @param arguments None.
      */
     public static void main(String[] arguments) {
-
-
         BPTree<String, Integer> testIndex = new BPTree<>(k -> k, s -> Integer.parseInt(s));
         testIndex.insert("i", 9);
         testIndex.insert("l", 12);
@@ -90,7 +88,6 @@ public class BPTree<K extends Comparable<K>, V> {
         System.out.println(testIndex.get("a")); // Should print 1
         System.out.println(testIndex.get("c")); // Should print 3
         System.out.println(testIndex.get("x")); // Should print null
-
 
         BPNode<String, Integer> node1 = testIndex.nodeFactory.getNode(testIndex.rootNumber);
         BPNode<String, Integer> node2 = testIndex.find(node1, "a");
@@ -134,7 +131,7 @@ public class BPTree<K extends Comparable<K>, V> {
 
         // Creating a simple internal node
         BPNode<String, Integer> internalNode = new BPNode<>(false);
-        internalNode.children.add(-1); // Using -1 or any placeholder value
+        internalNode.children.add(-1);
 
         internalNode.insertChild("mango", 1, testIndex.nodeFactory);
         internalNode.insertChild("orange", 2, testIndex.nodeFactory);
@@ -190,32 +187,29 @@ public class BPTree<K extends Comparable<K>, V> {
      * @param right Right B+Tree node after a split has been made.
      */
     private void insertOnParent(BPNode<K, V> left, K key, BPNode<K, V> right) {
-        BPNode<K, V> parent = nodeFactory.getNode(left.parent);
-
-        //base case: if the parent is the root
-        if (parent == null) {
+        if (left.parent < 0) {
             BPNode<K, V> newRoot = nodeFactory.create(false);
-            newRoot.keys.add(key);
             newRoot.children.add(left.number);
-            left.parent = newRoot.number;
-
+            newRoot.keys.add(key);
             newRoot.children.add(right.number);
+            left.parent = newRoot.number;
             right.parent = newRoot.number;
-
             rootNumber = newRoot.number;
-
-            return;
-        }
-
-        //insert the divider key to the parent
-        parent.insertChild(key, right.number, nodeFactory);
-
-        if (parent.keys.size() >= BPNode.SIZE) {
-            SplitResult<K, V> result = parent.splitInternal(nodeFactory);
-            // Need to keep calling insertOnParent after performing an internal node split
-            insertOnParent(result.left, result.dividerKey, result.right);
+            nodeFactory.save(newRoot);
+            nodeFactory.save(left);
+            nodeFactory.save(right);
+        } else {
+            BPNode<K, V> parent = nodeFactory.getNode(left.parent);
+            parent.insertChild(key, right.number, nodeFactory);
+            if (parent.getNumberOfKeys() >= BPNode.SIZE) {
+                SplitResult<K, V> result = parent.splitInternal(nodeFactory);
+                insertOnParent(result.left, result.dividerKey, result.right);
+            } else {
+                nodeFactory.save(parent);
+            }
         }
     }
+
 
     /**
      * Returns a value associated with a particular key.
