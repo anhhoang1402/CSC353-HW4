@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.function.Function;
 
+import edu.davidson.csc353.microdb.files.Block;
 import edu.davidson.csc353.microdb.utils.DecentPQ;
 
 public class BPNodeFactory<K extends Comparable<K>, V> {
@@ -32,8 +33,24 @@ public class BPNodeFactory<K extends Comparable<K>, V> {
 	private RandomAccessFile relationFile;
 	private FileChannel relationChannel;
 
+	private DecentPQ<NodeTimestamp> nodePQ;
+
+	private class NodeTimestamp implements Comparable<NodeTimestamp> {
+		public BPNode<K,V> node;
+		public long lastUsed;
+
+		public NodeTimestamp(BPNode<K,V> node, long lastUsed) {
+			this.node = node;
+			this.lastUsed = lastUsed;
+		}
+
+		public int compareTo(NodeTimestamp other) {
+			return (int) (lastUsed - other.lastUsed);
+		}
+	}
+
 	// You should change the type of this nodeMap
-	private HashMap<Integer, BPNode<K,V>> nodeMap;
+	private HashMap<Integer, NodeTimestamp> nodeMap;
 
 	/**
 	 * Creates a new NodeFactory object, which will operate a buffer manager for
@@ -75,10 +92,11 @@ public class BPNodeFactory<K extends Comparable<K>, V> {
 		BPNode<K,V> created = new BPNode<K,V>(leaf);
 		created.number = numberNodes;
 		
-		nodeMap.put(created.number, created);
+		NodeTimestamp newest = new NodeTimestamp(created,System.nanoTime());
+		nodeMap.put(created.number, newest);
 		numberNodes++;
 		
-		// TODO
+		nodePQ.add(newest);
 
 		return created;
 	}
@@ -100,8 +118,17 @@ public class BPNodeFactory<K extends Comparable<K>, V> {
 	 * @return Node read from the disk that has the provided number.
 	 */
 	private BPNode<K,V> readNode(int nodeNumber) {
-		// TODO
-		return null;
+		ByteBuffer buffer;
+		try {
+			relationChannel.read(buffer, nodeNumber * DISK_SIZE);
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Error accessing " + nodeNumber + " on file ");
+		}
+		BPNode<K,V> node = new BPNode<>(false);//How to know if this should be a leaf or not?
+		node.load(buffer, loadKey, loadValue);
+
+		return node;
 	}
 
 	/**
@@ -110,14 +137,26 @@ public class BPNodeFactory<K extends Comparable<K>, V> {
 	 * @param node Node to be saved into disk.
 	 */
 	private void writeNode(BPNode<K,V> node) {
-		// TODO
+		ByteBuffer buffer;
+		node.save(buffer, null);
+		try{
+			relationChannel.write(buffer, node.number * DISK_SIZE);
+		}
+		catch (IOException e){
+			throw new RuntimeException("Error accessing " + node.number + " on file ");
+		}
+
 	}
 
 	/**
 	 * Evicts the last recently used node back into disk.
 	 */
 	private void evict() {
-		// TODO
+		NodeTimestamp least = nodePQ.removeMin();
+		Integer nodeNumber = least.node.number;
+		nodeMap.remove(nodeNumber);
+
+		writeNode(least.node);
 	}
 
 	/**
@@ -128,7 +167,19 @@ public class BPNodeFactory<K extends Comparable<K>, V> {
 	 * @return The node associated with the provided number.
 	 */
 	public BPNode<K,V> getNode(int number) {
-		// TODO
-		return nodeMap.get(number);
+		if(nodeMap.containsKey(number)){
+			NodeTimestamp nodeTime = nodeMap.get(number);
+			nodeTime.lastUsed = System.nanoTime();
+			return nodeTime.node;
+		}
+
+		BPNode<K,V> node = readNode(number);
+		NodeTimestamp newest = new NodeTimestamp(node,System.nanoTime());
+		nodeMap.put(node.number, newest);
+		numberNodes++;
+		
+		nodePQ.add(newest);
+		return node;
 	}
+
 }
